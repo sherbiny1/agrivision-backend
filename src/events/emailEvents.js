@@ -1,5 +1,5 @@
 const EventEmitter = require('events');
-const { sendVerificationEmail } = require('../config/emailService');
+const { sendVerificationEmail } = require('../config/emailServiceBrevo'); // Use Brevo API
 
 const emailEmitter = new EventEmitter();
 
