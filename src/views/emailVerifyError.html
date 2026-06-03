@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Link Expired – AgriVision AI</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, Arial, sans-serif;
+            background: linear-gradient(135deg, #fef2f2 0%, #f0f4f0 50%, #fef2f2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+        }
+        .card {
+            background: #ffffff;
+            border-radius: 24px;
+            overflow: hidden;
+            box-shadow: 0 12px 48px rgba(0,0,0,0.10), 0 2px 8px rgba(0,0,0,0.06);
+            width: 100%;
+            max-width: 480px;
+        }
+        .card-header {
+            background: linear-gradient(135deg, #c53030, #e53e3e);
+            padding: 48px 40px;
+            text-align: center;
+        }
+        .card-header .icon { font-size: 56px; margin-bottom: 12px; }
+        .card-header h1 {
+            color: #fff;
+            font-size: 24px;
+            font-weight: 700;
+        }
+        .card-header p {
+            color: rgba(255,255,255,0.85);
+            font-size: 14px;
+            margin-top: 6px;
+        }
+        .card-body {
+            padding: 40px 48px;
+            text-align: center;
+        }
+        .card-body p {
+            color: #4a5568;
+            font-size: 15px;
+            line-height: 1.7;
+            margin-bottom: 16px;
+        }
+        .info-box {
+            background: #fff5f5;
+            border-radius: 12px;
+            padding: 20px;
+            border: 1px solid #fed7d7;
+        }
+        .info-box .title { color: #c53030; font-size: 14px; font-weight: 600; margin-bottom: 6px; }
+        .info-box .subtitle { color: #718096; font-size: 13px; }
+        .card-footer {
+            background: #fafafa;
+            padding: 20px 48px;
+            text-align: center;
+            border-top: 1px solid #f0f0f0;
+        }
+        .card-footer p { color: #a0aec0; font-size: 12px; }
+
+        @media (max-width: 768px) {
+            .card-header { padding: 40px 32px; }
+            .card-body { padding: 32px; }
+            .card-footer { padding: 18px 32px; }
+            .card-header h1 { font-size: 22px; }
+        }
+        @media (max-width: 480px) {
+            body { padding: 0; align-items: flex-start; }
+            .card { border-radius: 0; min-height: 100vh; }
+            .card-header { padding: 36px 24px; }
+            .card-body { padding: 28px 24px; }
+            .card-footer { padding: 16px 24px; }
+            .card-header h1 { font-size: 20px; }
+            .card-header .icon { font-size: 44px; }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="card">
+        <div class="card-header">
+            <div class="icon">❌</div>
+            <h1>Invalid or Expired Link</h1>
+            <p>AgriVision AI</p>
+        </div>
+        <div class="card-body">
+            <p>This verification link is <strong>invalid</strong> or has <strong>expired</strong>.</p>
+            <div class="info-box">
+                <p class="title">🔄 What should you do?</p>
+                <p class="subtitle">Please go back to the app and register again to receive a new verification email.</p>
+            </div>
+        </div>
+        <div class="card-footer">
+            <p>© {{YEAR}} AgriVision AI. All rights reserved.</p>
+        </div>
+    </div>
+</body>
+
+</html>
