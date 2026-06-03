@@ -41,7 +41,8 @@ const sendVerificationEmail = async (toEmail, name, verificationUrl) => {
                     'api-key': process.env.BREVO_API_KEY,
                     'Content-Type': 'application/json',
                     'accept': 'application/json'
-                }
+                },
+                timeout: 10000 // 10 second timeout
             }
         );
 
