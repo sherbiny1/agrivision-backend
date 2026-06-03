@@ -2,9 +2,11 @@ const nodemailer = require('nodemailer');
 const fs = require('fs');
 const path = require('path');
 
-// Create transporter using Gmail SMTP
+// Create transporter using configurable SMTP (supports Gmail, Brevo, SendGrid, etc.)
 const transporter = nodemailer.createTransport({
-    service: 'gmail',
+    host: process.env.SMTP_HOST || 'smtp.gmail.com',
+    port: parseInt(process.env.SMTP_PORT) || 587,
+    secure: false, // true for 465, false for other ports
     auth: {
         user: process.env.EMAIL_USER,
         pass: process.env.EMAIL_PASS,
@@ -27,6 +29,7 @@ const sendVerificationEmail = async (toEmail, name, verificationUrl) => {
         NAME: name,
         VERIFICATION_URL: verificationUrl,
         YEAR: new Date().getFullYear(),
+        BASE_URL: process.env.BASE_URL || 'http://localhost:5000',
     });
 
     const mailOptions = {
