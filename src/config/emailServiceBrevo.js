@@ -2,6 +2,13 @@ const axios = require('axios');
 const fs = require('fs');
 const path = require('path');
 
+// Debug: Check if BREVO_API_KEY is loaded
+console.log('🔑 BREVO_API_KEY loaded:', process.env.BREVO_API_KEY ? '✅ Yes' : '❌ No');
+if (!process.env.BREVO_API_KEY) {
+    console.error('⚠️ WARNING: BREVO_API_KEY not found in environment variables!');
+    console.error('⚠️ Make sure .env file has: BREVO_API_KEY=your-key-here');
+}
+
 // Load and fill HTML template from file
 const loadTemplate = (filename, replacements) => {
     const filePath = path.join(__dirname, '../views', filename);
@@ -27,7 +34,7 @@ const sendVerificationEmail = async (toEmail, name, verificationUrl) => {
             {
                 sender: {
                     name: 'AgriVision AI',
-                    email: 'noreply@agrivision.app'
+                    email: process.env.EMAIL_USER || 'noreply@agrivision.app'
                 },
                 to: [{
                     email: toEmail,
