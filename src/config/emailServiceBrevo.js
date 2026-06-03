@@ -1,10 +1,6 @@
-const Brevo = require('@getbrevo/brevo');
+const axios = require('axios');
 const fs = require('fs');
 const path = require('path');
-
-// Initialize Brevo API
-const apiInstance = new Brevo.TransactionalEmailsApi();
-apiInstance.setApiKey(Brevo.TransactionalEmailsApiApiKeys.apiKey, process.env.BREVO_API_KEY);
 
 // Load and fill HTML template from file
 const loadTemplate = (filename, replacements) => {
@@ -16,7 +12,7 @@ const loadTemplate = (filename, replacements) => {
     return html;
 };
 
-// Send verification email using Brevo API
+// Send verification email using Brevo API (via axios)
 const sendVerificationEmail = async (toEmail, name, verificationUrl) => {
     try {
         const html = loadTemplate('verificationEmail.html', {
@@ -26,19 +22,33 @@ const sendVerificationEmail = async (toEmail, name, verificationUrl) => {
             BASE_URL: process.env.BASE_URL || 'http://localhost:5000',
         });
 
-        const sendSmtpEmail = new Brevo.SendSmtpEmail();
-        sendSmtpEmail.subject = 'Confirm Your Email – AgriVision AI';
-        sendSmtpEmail.htmlContent = html;
-        sendSmtpEmail.sender = { 
-            name: 'AgriVision AI', 
-            email: process.env.EMAIL_USER || 'noreply@agrivision.com'
-        };
-        sendSmtpEmail.to = [{ email: toEmail, name: name }];
+        const response = await axios.post(
+            'https://api.brevo.com/v3/smtp/email',
+            {
+                sender: {
+                    name: 'AgriVision AI',
+                    email: 'noreply@agrivision.app'
+                },
+                to: [{
+                    email: toEmail,
+                    name: name
+                }],
+                subject: 'Confirm Your Email – AgriVision AI',
+                htmlContent: html
+            },
+            {
+                headers: {
+                    'api-key': process.env.BREVO_API_KEY,
+                    'Content-Type': 'application/json',
+                    'accept': 'application/json'
+                }
+            }
+        );
 
-        await apiInstance.sendTransacEmail(sendSmtpEmail);
         console.log(`✅ Verification email sent to ${toEmail} via Brevo API`);
+        return response.data;
     } catch (error) {
-        console.error(`❌ Failed to send email via Brevo API:`, error.message);
+        console.error(`❌ Failed to send email via Brevo API:`, error.response?.data || error.message);
         throw error;
     }
 };
