@@ -1,24 +1,5 @@
-const nodemailer = require('nodemailer');
 const fs = require('fs');
 const path = require('path');
-const dns = require('dns');
-
-// Force IPv4 DNS resolution (fixes Railway IPv6 ENETUNREACH errors)
-dns.setDefaultResultOrder('ipv4first');
-
-// Create transporter using Gmail SMTP (works on localhost + deployment)
-const transporter = nodemailer.createTransport({
-    host: 'smtp.gmail.com',
-    port: 465,
-    secure: true,
-    auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS,
-    },
-    tls: {
-        rejectUnauthorized: false,
-    },
-});
 
 // Load and fill HTML template from file
 const loadTemplate = (filename, replacements) => {
@@ -30,6 +11,31 @@ const loadTemplate = (filename, replacements) => {
     return html;
 };
 
+// Send email using Brevo HTTP API (works on Railway — no SMTP needed)
+const sendEmail = async ({ to, subject, html }) => {
+    const response = await fetch('https://api.brevo.com/v3/smtp/email', {
+        method: 'POST',
+        headers: {
+            'accept': 'application/json',
+            'api-key': process.env.BREVO_API_KEY,
+            'content-type': 'application/json',
+        },
+        body: JSON.stringify({
+            sender: { name: 'AgriVision AI', email: process.env.SENDER_EMAIL || 'agrivisionproject@gmail.com' },
+            to: [{ email: to }],
+            subject,
+            htmlContent: html,
+        }),
+    });
+
+    if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || `Brevo API error: ${response.status}`);
+    }
+
+    return response.json();
+};
+
 // Send verification OTP email (6-digit code)
 const sendVerificationOTP = async (toEmail, name, code) => {
     const html = loadTemplate('verificationOTP.html', {
@@ -38,14 +44,11 @@ const sendVerificationOTP = async (toEmail, name, code) => {
         YEAR: new Date().getFullYear(),
     });
 
-    const mailOptions = {
-        from: `"AgriVision AI" <${process.env.EMAIL_USER}>`,
+    await sendEmail({
         to: toEmail,
         subject: `${code} – Your AgriVision AI Verification Code`,
         html,
-    };
-
-    await transporter.sendMail(mailOptions);
+    });
 };
 
 // Send password reset OTP email (4-digit code)
@@ -56,14 +59,11 @@ const sendPasswordResetEmail = async (toEmail, name, code) => {
         YEAR: new Date().getFullYear(),
     });
 
-    const mailOptions = {
-        from: `"AgriVision AI" <${process.env.EMAIL_USER}>`,
+    await sendEmail({
         to: toEmail,
         subject: `${code} – Your AgriVision AI Password Reset Code`,
         html,
-    };
-
-    await transporter.sendMail(mailOptions);
+    });
 };
 
 module.exports = { sendVerificationOTP, sendPasswordResetEmail, loadTemplate };
