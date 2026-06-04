@@ -14,6 +14,7 @@ const transporter = nodemailer.createTransport({
     tls: {
         rejectUnauthorized: false, // Fix for self-signed certificate errors
     },
+    family: 4, // Force IPv4 (Railway doesn't support IPv6)
 });
 
 // Load and fill HTML template from file
