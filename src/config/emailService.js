@@ -1,20 +1,23 @@
 const nodemailer = require('nodemailer');
 const fs = require('fs');
 const path = require('path');
+const dns = require('dns');
+
+// Force IPv4 DNS resolution (fixes Railway IPv6 ENETUNREACH errors)
+dns.setDefaultResultOrder('ipv4first');
 
 // Create transporter using Gmail SMTP (works on localhost + deployment)
 const transporter = nodemailer.createTransport({
-    host: process.env.SMTP_HOST || 'smtp.gmail.com',
-    port: parseInt(process.env.SMTP_PORT) || 587,
-    secure: false, // true for 465, false for other ports
+    host: 'smtp.gmail.com',
+    port: 465,
+    secure: true,
     auth: {
         user: process.env.EMAIL_USER,
         pass: process.env.EMAIL_PASS,
     },
     tls: {
-        rejectUnauthorized: false, // Fix for self-signed certificate errors
+        rejectUnauthorized: false,
     },
-    family: 4, // Force IPv4 (Railway doesn't support IPv6)
 });
 
 // Load and fill HTML template from file
