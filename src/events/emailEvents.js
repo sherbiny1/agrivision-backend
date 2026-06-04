@@ -1,17 +1,27 @@
 const EventEmitter = require('events');
-const { sendVerificationEmail } = require('../config/emailServiceBrevo'); // Use Brevo API
+const { sendVerificationOTP, sendPasswordResetEmail } = require('../config/emailService');
 
 const emailEmitter = new EventEmitter();
 
-// Listen for email verification events (non-blocking)
-emailEmitter.on('sendVerificationEmail', ({ email, name, verificationUrl }) => {
-    // Send email without awaiting (fire and forget)
-    sendVerificationEmail(email, name, verificationUrl)
+// Listen for email verification OTP events (non-blocking)
+emailEmitter.on('sendVerificationOTP', ({ email, name, code }) => {
+    sendVerificationOTP(email, name, code)
         .then(() => {
-            console.log(`✅ Verification email sent to ${email}`);
+            console.log(`✅ Verification OTP sent to ${email}`);
         })
         .catch((err) => {
-            console.error(`❌ Failed to send email to ${email}:`, err.message);
+            console.error(`❌ Failed to send verification OTP to ${email}:`, err.message);
+        });
+});
+
+// Listen for password reset code events (non-blocking)
+emailEmitter.on('sendPasswordResetCode', ({ email, name, code }) => {
+    sendPasswordResetEmail(email, name, code)
+        .then(() => {
+            console.log(`✅ Password reset code sent to ${email}`);
+        })
+        .catch((err) => {
+            console.error(`❌ Failed to send password reset code to ${email}:`, err.message);
         });
 });
 

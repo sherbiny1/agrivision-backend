@@ -4,13 +4,15 @@ const {
     registerUser, 
     loginUser,
     verifyEmail,
+    resendVerification,
     forgotPassword,
     verifyCode,
     resetPassword
 } = require('../controllers/authController');
 
 router.post('/register', registerUser);
-router.get('/verify-email/:token', verifyEmail);
+router.post('/verify-email', verifyEmail);
+router.post('/resend-verification', resendVerification);
 router.post('/login', loginUser);
 router.post('/forgot-password', forgotPassword);
 router.post('/verify-code', verifyCode);

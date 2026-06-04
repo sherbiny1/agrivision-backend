@@ -247,82 +247,87 @@ class AuthService {
 
 ---
 
-### 4. Complete Login Flow Example
+### 4. Email Verification Flow (NEW - OTP Based)
+
+After registration, the user receives a **6-digit code** via email.
+They must enter it in the app before they can log in.
 
 ```dart
-import 'package:flutter/material.dart';
-
-class LoginScreen extends StatefulWidget {
-  @override
-  _LoginScreenState createState() => _LoginScreenState();
+// ============================================
+// STEP 1: Register → navigates to OTP screen
+// ============================================
+Future<void> register(String name, String email, String password) async {
+  final response = await dio.post('/api/auth/register', data: {
+    'name': name,
+    'email': email,
+    'password': password,
+    'role': 'Farmer',
+  });
+  
+  // response.data['emailVerified'] == false
+  // response.data has NO token (user must verify first)
+  // → Navigate to OTP input screen, pass email
 }
 
-class _LoginScreenState extends State<LoginScreen> {
-  final _emailController = TextEditingController();
-  final _passwordController = TextEditingController();
-  final _apiService = ApiService();
-  final _authService = AuthService();
-  bool _isLoading = false;
+// ============================================
+// STEP 2: Verify OTP → get token → go to home
+// ============================================
+Future<void> verifyEmail(String email, String code) async {
+  final response = await dio.post('/api/auth/verify-email', data: {
+    'email': email,
+    'code': code,  // 6-digit code from email
+  });
   
-  Future<void> _handleLogin() async {
-    setState(() => _isLoading = true);
-    
-    try {
-      final response = await _apiService.login(
-        _emailController.text,
-        _passwordController.text,
-      );
-      
-      // Save token
-      await _authService.saveToken(response['token']);
-      
-      // Set token for future requests
-      _apiService.setAuthToken(response['token']);
-      
-      // Navigate to home
-      Navigator.pushReplacementNamed(context, '/home');
-      
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Login failed: $e')),
-      );
-    } finally {
-      setState(() => _isLoading = false);
+  // response.data['token'] → save this!
+  // response.data['emailVerified'] == true
+  // → Navigate to home screen
+}
+
+// ============================================
+// STEP 3: Resend code (if expired / not received)
+// ============================================
+Future<void> resendCode(String email) async {
+  await dio.post('/api/auth/resend-verification', data: {
+    'email': email,
+  });
+  // Show snackbar: "New code sent to your email"
+}
+
+// ============================================
+// LOGIN (blocked if not verified → 403)
+// ============================================
+Future<void> login(String email, String password) async {
+  try {
+    final response = await dio.post('/api/auth/login', data: {
+      'email': email,
+      'password': password,
+    });
+    // Save token, navigate to home
+  } on DioException catch (e) {
+    if (e.response?.statusCode == 403) {
+      // User not verified → navigate to OTP screen
+    } else if (e.response?.statusCode == 401) {
+      // Wrong email/password
     }
   }
-  
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: Text('Login')),
-      body: Padding(
-        padding: EdgeInsets.all(16),
-        child: Column(
-          children: [
-            TextField(
-              controller: _emailController,
-              decoration: InputDecoration(labelText: 'Email'),
-              keyboardType: TextInputType.emailAddress,
-            ),
-            SizedBox(height: 16),
-            TextField(
-              controller: _passwordController,
-              decoration: InputDecoration(labelText: 'Password'),
-              obscureText: true,
-            ),
-            SizedBox(height: 24),
-            _isLoading
-                ? CircularProgressIndicator()
-                : ElevatedButton(
-                    onPressed: _handleLogin,
-                    child: Text('Login'),
-                  ),
-          ],
-        ),
-      ),
-    );
-  }
 }
+
+// ============================================
+// FORGOT PASSWORD FLOW
+// ============================================
+// Step 1: Request reset code (sent to email)
+await dio.post('/api/auth/forgot-password', data: { 'email': email });
+
+// Step 2: Verify the 4-digit code
+await dio.post('/api/auth/verify-code', data: { 'email': email, 'code': code });
+
+// Step 3: Reset password
+await dio.post('/api/auth/reset-password', data: {
+  'email': email,
+  'code': code,
+  'newPassword': newPassword,
+});
+```
 ```
 
 ---
@@ -481,11 +486,13 @@ See `API_DOCUMENTATION.md` for complete API reference.
 
 ```dart
 // Auth (no token required)
-POST   /api/auth/register
-POST   /api/auth/login
-POST   /api/auth/forgot-password
-POST   /api/auth/verify-code
-POST   /api/auth/reset-password
+POST   /api/auth/register              // → sends 6-digit OTP to email
+POST   /api/auth/verify-email           // { email, code } → returns token
+POST   /api/auth/resend-verification    // { email } → resend OTP
+POST   /api/auth/login                  // blocked if not verified (403)
+POST   /api/auth/forgot-password        // sends reset code to email
+POST   /api/auth/verify-code            // verify reset code
+POST   /api/auth/reset-password         // { email, code, newPassword }
 
 // Farmer (token required)
 GET    /api/farmer/home

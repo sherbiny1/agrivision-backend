@@ -34,7 +34,7 @@ const userSchema = new mongoose.Schema({
         type: Boolean,
         default: false,
     },
-    emailVerificationToken: {
+    emailVerificationCode: {
         type: String,
     },
     emailVerificationExpires: {

@@ -2,7 +2,7 @@ const nodemailer = require('nodemailer');
 const fs = require('fs');
 const path = require('path');
 
-// Create transporter using configurable SMTP (supports Gmail, Brevo, SendGrid, etc.)
+// Create transporter using Gmail SMTP (works on localhost + deployment)
 const transporter = nodemailer.createTransport({
     host: process.env.SMTP_HOST || 'smtp.gmail.com',
     port: parseInt(process.env.SMTP_PORT) || 587,
@@ -10,6 +10,9 @@ const transporter = nodemailer.createTransport({
     auth: {
         user: process.env.EMAIL_USER,
         pass: process.env.EMAIL_PASS,
+    },
+    tls: {
+        rejectUnauthorized: false, // Fix for self-signed certificate errors
     },
 });
 
@@ -23,23 +26,40 @@ const loadTemplate = (filename, replacements) => {
     return html;
 };
 
-// Send verification email (no attachment — clean email)
-const sendVerificationEmail = async (toEmail, name, verificationUrl) => {
-    const html = loadTemplate('verificationEmail.html', {
+// Send verification OTP email (6-digit code)
+const sendVerificationOTP = async (toEmail, name, code) => {
+    const html = loadTemplate('verificationOTP.html', {
         NAME: name,
-        VERIFICATION_URL: verificationUrl,
+        CODE: code,
         YEAR: new Date().getFullYear(),
-        BASE_URL: process.env.BASE_URL || 'http://localhost:5000',
     });
 
     const mailOptions = {
         from: `"AgriVision AI" <${process.env.EMAIL_USER}>`,
         to: toEmail,
-        subject: 'Confirm Your Email – AgriVision AI',
+        subject: `${code} – Your AgriVision AI Verification Code`,
         html,
     };
 
     await transporter.sendMail(mailOptions);
 };
 
-module.exports = { sendVerificationEmail, loadTemplate };
+// Send password reset OTP email (4-digit code)
+const sendPasswordResetEmail = async (toEmail, name, code) => {
+    const html = loadTemplate('passwordResetEmail.html', {
+        NAME: name,
+        CODE: code,
+        YEAR: new Date().getFullYear(),
+    });
+
+    const mailOptions = {
+        from: `"AgriVision AI" <${process.env.EMAIL_USER}>`,
+        to: toEmail,
+        subject: `${code} – Your AgriVision AI Password Reset Code`,
+        html,
+    };
+
+    await transporter.sendMail(mailOptions);
+};
+
+module.exports = { sendVerificationOTP, sendPasswordResetEmail, loadTemplate };

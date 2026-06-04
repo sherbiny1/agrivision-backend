@@ -1,14 +1,17 @@
 const User = require('../models/User');
 const jwt = require('jsonwebtoken');
-const crypto = require('crypto');
 const emailEmitter = require('../events/emailEvents');
-const { loadTemplate } = require('../config/emailService');
 
 // Generate JWT
 const generateToken = (id) => {
     return jwt.sign({ id }, process.env.JWT_SECRET, {
         expiresIn: '30d',
     });
+};
+
+// Generate 6-digit OTP code
+const generateOTP = () => {
+    return Math.floor(100000 + Math.random() * 900000).toString();
 };
 
 // @desc    Register new user
@@ -28,9 +31,9 @@ const registerUser = async (req, res) => {
             return res.status(400).json({ message: 'User already exists' });
         }
 
-        // Generate email verification token
-        const verificationToken = crypto.randomBytes(32).toString('hex');
-        const verificationExpires = Date.now() + 24 * 60 * 60 * 1000; // 24 hours
+        // Generate 6-digit verification code
+        const verificationCode = generateOTP();
+        const verificationExpires = Date.now() + 10 * 60 * 1000; // 10 minutes
 
         // Create user (unverified)
         const user = await User.create({
@@ -39,16 +42,17 @@ const registerUser = async (req, res) => {
             password,
             role: role || 'Farmer',
             emailVerified: false,
-            emailVerificationToken: verificationToken,
+            emailVerificationCode: verificationCode,
             emailVerificationExpires: verificationExpires,
         });
 
         if (user) {
-            // Build verification URL
-            const verificationUrl = `${process.env.BASE_URL}/api/auth/verify-email/${verificationToken}`;
-
             // Emit event — email sends in background, response is instant
-            emailEmitter.emit('sendVerificationEmail', { email, name, verificationUrl });
+            emailEmitter.emit('sendVerificationOTP', {
+                email,
+                name,
+                code: verificationCode,
+            });
 
             res.status(201).json({
                 _id: user.id,
@@ -56,8 +60,7 @@ const registerUser = async (req, res) => {
                 email: user.email,
                 role: user.role,
                 emailVerified: user.emailVerified,
-                token: generateToken(user._id),
-                message: 'Registration successful! Please check your email to confirm your account.',
+                message: 'Registration successful! Please check your email for the 6-digit verification code.',
             });
         } else {
             res.status(400).json({ message: 'Invalid user data' });
@@ -67,38 +70,82 @@ const registerUser = async (req, res) => {
     }
 };
 
-// @desc    Verify Email
-// @route   GET /api/auth/verify-email/:token
+// @desc    Verify Email with OTP code
+// @route   POST /api/auth/verify-email
 // @access  Public
 const verifyEmail = async (req, res) => {
     try {
-        const { token } = req.params;
+        const { email, code } = req.body;
+
+        if (!email || !code) {
+            return res.status(400).json({ message: 'Please provide email and verification code' });
+        }
 
         const user = await User.findOne({
-            emailVerificationToken: token,
+            email,
+            emailVerificationCode: code,
             emailVerificationExpires: { $gt: Date.now() },
         });
 
         if (!user) {
-            const errorHtml = loadTemplate('emailVerifyError.html', {
-                YEAR: new Date().getFullYear(),
-            });
-            return res.status(400).send(errorHtml);
+            return res.status(400).json({ message: 'Invalid or expired verification code' });
         }
 
         // Mark email as verified
         user.emailVerified = true;
-        user.emailVerificationToken = undefined;
+        user.emailVerificationCode = undefined;
         user.emailVerificationExpires = undefined;
         await user.save();
 
-        // Return beautiful success page from HTML file
-        const successHtml = loadTemplate('emailVerifiedSuccess.html', {
-            NAME: user.name,
-            BASE_URL: process.env.BASE_URL,
-            YEAR: new Date().getFullYear(),
+        res.status(200).json({
+            _id: user.id,
+            name: user.name,
+            email: user.email,
+            role: user.role,
+            emailVerified: true,
+            token: generateToken(user._id),
+            message: 'Email verified successfully!',
         });
-        res.status(200).send(successHtml);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+// @desc    Resend verification code
+// @route   POST /api/auth/resend-verification
+// @access  Public
+const resendVerification = async (req, res) => {
+    try {
+        const { email } = req.body;
+
+        if (!email) {
+            return res.status(400).json({ message: 'Please provide email' });
+        }
+
+        const user = await User.findOne({ email });
+
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+
+        if (user.emailVerified) {
+            return res.status(400).json({ message: 'Email is already verified' });
+        }
+
+        // Generate new code
+        const verificationCode = generateOTP();
+        user.emailVerificationCode = verificationCode;
+        user.emailVerificationExpires = Date.now() + 10 * 60 * 1000; // 10 minutes
+        await user.save();
+
+        // Send new code via email
+        emailEmitter.emit('sendVerificationOTP', {
+            email,
+            name: user.name,
+            code: verificationCode,
+        });
+
+        res.status(200).json({ message: 'New verification code sent to your email' });
     } catch (error) {
         res.status(500).json({ message: error.message });
     }
@@ -118,7 +165,7 @@ const loginUser = async (req, res) => {
             // Block login if email not verified
             if (!user.emailVerified) {
                 return res.status(403).json({
-                    message: 'Please verify your email before logging in. Check your inbox for the confirmation link.'
+                    message: 'Please verify your email before logging in. Check your inbox for the verification code.'
                 });
             }
 
@@ -138,7 +185,7 @@ const loginUser = async (req, res) => {
     }
 };
 
-// @desc    Forgot Password
+// @desc    Forgot Password (sends code via email)
 // @route   POST /api/auth/forgot-password
 // @access  Public
 const forgotPassword = async (req, res) => {
@@ -155,11 +202,18 @@ const forgotPassword = async (req, res) => {
         user.resetPasswordExpires = Date.now() + 10 * 60 * 1000;
         await user.save();
 
+        // Send reset code via email
+        emailEmitter.emit('sendPasswordResetCode', {
+            email,
+            name: user.name,
+            code,
+        });
+
         console.log(`\n=== PASSWORD RESET CODE ===`);
         console.log(`To: ${email} | Code: ${code}`);
         console.log(`===========================\n`);
 
-        res.json({ message: 'Verification code sent to email' });
+        res.json({ message: 'Password reset code sent to your email' });
     } catch (error) {
         res.status(500).json({ message: error.message });
     }
@@ -217,6 +271,7 @@ const resetPassword = async (req, res) => {
 module.exports = {
     registerUser,
     verifyEmail,
+    resendVerification,
     loginUser,
     forgotPassword,
     verifyCode,
