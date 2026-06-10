@@ -34,7 +34,7 @@ BE AGRI/
 │   │
 │   ├── config/
 │   │   ├── db.js                      # MongoDB connection
-│   │   └── emailService.js            # Gmail SMTP email service
+│   │   └── emailService.js            # Brevo HTTP API email service
 │   │
 │   ├── controllers/
 │   │   ├── authController.js          # Auth: register, login, OTP verify, password reset
@@ -80,7 +80,7 @@ BE AGRI/
 
 - Node.js >= 18.0.0
 - MongoDB Atlas account (or local MongoDB)
-- Gmail account with App Password enabled
+- Brevo account with API key (for transactional emails)
 
 ### Installation
 
@@ -110,8 +110,8 @@ npm start
 | `PORT` | Server port | `5000` |
 | `MONGO_URI` | MongoDB connection string | `mongodb+srv://...` |
 | `JWT_SECRET` | Secret key for JWT tokens | `your-secret-key` |
-| `EMAIL_USER` | Gmail address for sending emails | `agrivisionproject@gmail.com` |
-| `EMAIL_PASS` | Gmail App Password (not regular password) | `xxxx xxxx xxxx xxxx` |
+| `BREVO_API_KEY` | Brevo transactional email API key | `xkeysib-...` |
+| `SENDER_EMAIL` | Verified sender email in Brevo | `your-email@gmail.com` |
 
 ---
 
@@ -142,6 +142,10 @@ npm start
 | `GET` | `/api/farmer/soil-history` | Soil test history |
 | `GET` | `/api/farmer/test-history` | Combined scan + soil history |
 | `GET` | `/api/farmer/notifications` | All notifications |
+| `POST` | `/api/farmer/notifications` | Create a notification |
+| `PUT` | `/api/farmer/notifications/:id/read` | Mark notification as read |
+| `GET` | `/api/farmer/tasks` | All tasks |
+| `PUT` | `/api/farmer/tasks/:id/toggle` | Toggle task completion |
 | `GET` | `/api/farmer/knowledge-base` | Educational articles |
 | `PUT` | `/api/farmer/settings/language` | Update language preference |
 
@@ -203,7 +207,7 @@ Token expires in **30 days**.
 | **MongoDB + Mongoose** | Database |
 | **JWT** | Authentication |
 | **bcryptjs** | Password hashing |
-| **Nodemailer** | Email sending (Gmail SMTP) |
+| **Brevo API** | Transactional email sending |
 | **Multer** | Image upload |
 | **CORS** | Cross-origin support |
 

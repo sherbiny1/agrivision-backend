@@ -335,6 +335,87 @@ const getSoilHistory = async (req, res) => {
     }
 };
 
+// @desc    Create a notification (from Flutter task reminders, etc.)
+// @route   POST /api/farmer/notifications
+// @access  Private
+const createNotification = async (req, res) => {
+    try {
+        const { title, body } = req.body;
+
+        if (!title || !body) {
+            return res.status(400).json({ message: 'Please provide title and body' });
+        }
+
+        const notification = await Notification.create({
+            farmerId: req.user._id,
+            title,
+            body,
+        });
+
+        res.status(201).json(notification);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+// @desc    Mark notification as read
+// @route   PUT /api/farmer/notifications/:id/read
+// @access  Private
+const markNotificationRead = async (req, res) => {
+    try {
+        const notification = await Notification.findOne({
+            _id: req.params.id,
+            farmerId: req.user._id,
+        });
+
+        if (!notification) {
+            return res.status(404).json({ message: 'Notification not found' });
+        }
+
+        notification.isRead = true;
+        await notification.save();
+
+        res.json(notification);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+// @desc    Get all tasks for the logged-in farmer
+// @route   GET /api/farmer/tasks
+// @access  Private
+const getTasks = async (req, res) => {
+    try {
+        const tasks = await Task.find({ farmerId: req.user._id }).sort({ createdAt: -1 });
+        res.json(tasks);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+// @desc    Toggle task completion
+// @route   PUT /api/farmer/tasks/:id/toggle
+// @access  Private
+const toggleTask = async (req, res) => {
+    try {
+        const task = await Task.findOne({
+            _id: req.params.id,
+            farmerId: req.user._id,
+        });
+
+        if (!task) {
+            return res.status(404).json({ message: 'Task not found' });
+        }
+
+        task.isCompleted = !task.isCompleted;
+        await task.save();
+
+        res.json(task);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
 module.exports = {
     scanPlant,
     getDiagnoses,
@@ -345,6 +426,10 @@ module.exports = {
     getProfile,
     getHome,
     getNotifications,
+    createNotification,
+    markNotificationRead,
+    getTasks,
+    toggleTask,
     getKnowledgeBase,
     updateLanguage
 };

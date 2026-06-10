@@ -501,6 +501,10 @@ GET    /api/farmer/diagnoses
 POST   /api/farmer/farm-data
 GET    /api/farmer/recommendations
 GET    /api/farmer/notifications
+POST   /api/farmer/notifications       // { title, body } → create notification
+PUT    /api/farmer/notifications/:id/read  // mark as read
+GET    /api/farmer/tasks
+PUT    /api/farmer/tasks/:id/toggle    // toggle task completion
 GET    /api/farmer/knowledge-base
 PUT    /api/farmer/settings/language
 

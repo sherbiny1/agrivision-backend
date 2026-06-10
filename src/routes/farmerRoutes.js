@@ -10,6 +10,10 @@ const {
     getProfile,
     getHome,
     getNotifications,
+    createNotification,
+    markNotificationRead,
+    getTasks,
+    toggleTask,
     getKnowledgeBase,
     updateLanguage
 } = require('../controllers/farmerController');
@@ -30,7 +34,12 @@ router.get('/recommendations', getRecommendations);
 router.get('/soil-history', getSoilHistory);
 router.get('/test-history', getTestHistory);
 router.get('/notifications', getNotifications);
+router.post('/notifications', createNotification);
+router.put('/notifications/:id/read', markNotificationRead);
+router.get('/tasks', getTasks);
+router.put('/tasks/:id/toggle', toggleTask);
 router.get('/knowledge-base', getKnowledgeBase);
 router.put('/settings/language', updateLanguage);
 
 module.exports = router;
+
