@@ -71,7 +71,8 @@ const registerUser = async (req, res) => {
 // @access  Public
 const verifyEmail = async (req, res) => {
     try {
-        const { email, code } = req.body;
+        const { code } = req.body;
+        const email = req.body.email?.trim().toLowerCase();
 
         if (!email || !code) {
             return res.status(400).json({ message: 'Please provide email and verification code' });
@@ -112,7 +113,7 @@ const verifyEmail = async (req, res) => {
 // @access  Public
 const resendVerification = async (req, res) => {
     try {
-        const { email } = req.body;
+        const email = req.body.email?.trim().toLowerCase();
 
         if (!email) {
             return res.status(400).json({ message: 'Please provide email' });
@@ -186,7 +187,7 @@ const loginUser = async (req, res) => {
 // @access  Public
 const forgotPassword = async (req, res) => {
     try {
-        const { email } = req.body;
+        const email = req.body.email?.trim().toLowerCase();
         const user = await User.findOne({ email });
 
         if (!user) {
@@ -220,7 +221,8 @@ const forgotPassword = async (req, res) => {
 // @access  Public
 const verifyCode = async (req, res) => {
     try {
-        const { email, code } = req.body;
+        const { code } = req.body;
+        const email = req.body.email?.trim().toLowerCase();
         const user = await User.findOne({
             email,
             resetPasswordCode: code,
